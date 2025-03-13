@@ -17,7 +17,7 @@ library(tidyverse)
 cl <- makeCluster(10)
 registerDoParallel(cl)
 
-
+adad
 
 
 
