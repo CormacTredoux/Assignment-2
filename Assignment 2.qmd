@@ -65,13 +65,14 @@ t <- system.time(
     median(res)
   }
 ) 
+
 data.frame(t) |> 
   t() |> 
   data.frame() |> 
   select(user.self:elapsed) |> 
   knitr::kable(col.names = c("User", "System", "Total Elapsed")) 
 
-k <- data.frame(t(t)) 
+k <- data.frame(t(t))[,1:3]
   
  
   
