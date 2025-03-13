@@ -1,5 +1,5 @@
 ---
-title: "Assignment 2"
+title: "Practical"
 ---
 
 ```{r}
@@ -13,11 +13,12 @@ library(tidyverse)
 # Question 1
 
 ```{r}
+
 #Initialize cluster
 cl <- makeCluster(10)
 registerDoParallel(cl)
 
-adad
+
 
 
 
@@ -40,6 +41,7 @@ results |>
 
 ```{r}
 #| message: false
+#| eval: false
 
 library(MASS)
 gal <- galaxies
@@ -66,13 +68,9 @@ t <- system.time(
   }
 ) 
 
-data.frame(t) |> 
-  t() |> 
-  data.frame() |> 
-  select(user.self:elapsed) |> 
-  knitr::kable(col.names = c("User", "System", "Total Elapsed")) 
 
-k <- data.frame(t(t))[,1:3]
+
+
   
  
   

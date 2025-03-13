@@ -1,5 +1,26 @@
 project:
-  title: "Assignment 2"
+  title: "Hand-in 2"
+  type: book
+  output-dir: _site
+  
+website: 
+  navbar: 
+    left:
+      - href: index.qmd
+      - text: Home
+      - href: Practical.qmd
+      - text: Practical
 
+book: 
+  chapters: 
+    - index.qmd
+    - Practical.qmd
+  
+  
+format:
+  html:
+    toc: true
+    toc-depth: 3
+  
 editor: visual
 
