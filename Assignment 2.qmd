@@ -1,0 +1,116 @@
+---
+title: "Assignment 2"
+---
+
+```{r}
+#| echo: false
+#| mesage: false
+library(foreach)
+library(doParallel)
+library(tidyverse)
+```
+
+# Question 1
+
+```{r}
+#Initialize cluster
+cl <- makeCluster(10)
+registerDoParallel(cl)
+
+
+
+
+
+#Loop
+results <- foreach(i = 1:100 ,.combine = rbind ) %dopar% {
+  vals <- rexp(100,1)
+  c(mean(vals), var(vals))
+  
+}
+
+stopCluster(cl)
+
+results |> 
+  data.frame() |> 
+  tibble::remove_rownames() |> 
+  knitr::kable(col.names = c("Means", "Variances"))
+```
+
+# Question 2
+
+```{r}
+#| message: false
+
+library(MASS)
+gal <- galaxies
+
+#1 Bootstrap sample of 1000 at a time
+
+#Serial 
+system.time(
+  result1 <- foreach(i = 1:1000, .combine = c ) %do% {
+    res <- sample(gal, replace = TRUE)
+    median(res)
+  }
+)
+
+#Parallel
+
+cl <- makeCluster(10)
+registerDoParallel(cl)
+
+t <- system.time(
+  result2 <- foreach(i = 1:1000, .combine = c ) %dopar% {
+    res <- sample(gal, replace = TRUE)
+    median(res)
+  }
+) 
+data.frame(t) |> 
+  t() |> 
+  data.frame() |> 
+  select(user.self:elapsed) |> 
+  knitr::kable(col.names = c("User", "System", "Total Elapsed")) 
+
+k <- data.frame(t(t)) 
+  
+ 
+  
+
+stopCluster(cl)
+mean(result1)
+mean(result2)
+
+#1000 bootstrap samples of 1000 at a time 
+
+
+#Serial 
+system.time(
+  result1 <- foreach(i = 1:1000, .combine = c ) %do% {
+    inner <- foreach(j = 1:1000, .combine = c) %do% {
+      res <- sample(gal, replace = TRUE)
+      median(res)
+    }
+    inner
+  }
+)
+
+#Parallel
+
+cl <- makeCluster(10)
+registerDoParallel(cl)
+
+system.time(
+  result2 <- foreach(i = 1:1000, .combine = c ) %dopar% {
+    foreach(j = 1:1000, .combine = c) %dopar% {
+    res <- sample(gal, replace = TRUE)
+    median(res)
+    }
+  }
+)
+
+stopCluster(cl)
+mean(result1)
+mean(result2)
+
+
+```
