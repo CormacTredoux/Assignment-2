@@ -10,37 +10,22 @@ library(doParallel)
 library(tidyverse)
 library(MASS)
 library(iterators)
-library(doRNG)
- 
-
-#Function that takes system time results and prints an interpretable table
-tablefy <- function(d, heading) {
-data.frame(d)[1:3,] |> 
-  t() |> 
-  knitr::kable(col.names = c("User time", "System Time", "Total elapsed"), caption = heading)
-}
 ```
 
 # Question 1
 
+Shown below are summary statistics (mean and variance) of 100 samples from an exponential distribution of mean via via use of the foreach package.
+
 ```{r}
-
-#Initialize cluster
-cl <- makeCluster(10)
-registerDoParallel(cl)
-
-
-
 
 
 #Loop
-results <- foreach(i = 1:100 ,.combine = rbind ) %dopar% {
+results <- foreach(i = 1:100 ,.combine = rbind ) %do% {
   vals <- rexp(100,1)
   c(mean(vals), var(vals))
   
 }
 
-stopCluster(cl)
 
 results |> 
   data.frame() |> 
@@ -49,6 +34,17 @@ results |>
 ```
 
 # Question 2
+
+Below is a useful function that will format and display neat tables presenting the results.
+
+```{r}
+#Function that takes system time results and prints an interpretable table
+tablefy <- function(d, heading) {
+data.frame(d)[1:3,] |> 
+  t() |> 
+  knitr::kable(col.names = c("User time", "System Time", "Total elapsed"), caption = heading)
+}
+```
 
 Below are serial and parallel bootstrapping computations of 1 sample at a time each of size 1000.
 
@@ -176,7 +172,7 @@ paste0(mean(inCi)*100, "%") |>
 stopCluster(cl)
 ```
 
-The estimated coverage is 95.2%, this is not a surprising figure as each bootstrap percentile confidence interval is a 95% confidence interval.
+The estimated coverage is shown in the table above, this is not a surprising figure as each bootstrap percentile confidence interval is a 95% confidence interval.
 
 # Question 4
 

@@ -10,8 +10,8 @@ execute:
   echo: true
 ---
 
-This practical concerns involves several calculations concering the parallelising of tasks in the R environment.
+This practical concerns involves several calculations concerning the parallelising of tasks in the R environment.
 
 Below is the link to my GitHub repository containing the practical.
 
-<https://github.com/CormacTredoux/Practical1>
+<https://github.com/CormacTredoux/Assignment-2>
