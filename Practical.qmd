@@ -9,6 +9,9 @@ library(foreach)
 library(doParallel)
 library(tidyverse)
 library(MASS)
+library(iterators)
+library(doRNG)
+ 
 
 #Function that takes system time results and prints an interpretable table
 tablefy <- function(d, heading) {
@@ -60,7 +63,7 @@ gal <- galaxies
 #Serial 
 tablefy(
   system.time(
-    result1 <- foreach(i = 1:1000, .combine = c ) %do% {
+    result1 <- foreach(i = 1:100000, .combine = c ) %do% {
       res <- sample(gal, replace = TRUE)
       median(res)
     }
@@ -75,7 +78,7 @@ registerDoParallel(cl)
 
 tablefy(
   system.time(
-    result2 <- foreach(i = 1:1000, .combine = c ) %dopar% {
+    result2 <- foreach(i = 1:100000, .combine = c ) %dopar% {
       res <- sample(gal, replace = TRUE)
       median(res)
     }
@@ -174,3 +177,102 @@ stopCluster(cl)
 ```
 
 The estimated coverage is 95.2%, this is not a surprising figure as each bootstrap percentile confidence interval is a 95% confidence interval.
+
+# Question 4
+
+Below is a serial iteration over 3 vectors each containing 5 random variables and finds the max of those vectors. It is parallel safe and on a larger scale can easily be parallelised to provide more computationally efficient solutions.
+
+```{r}
+
+
+#Set seed for reproducibility
+set.seed(1234)  
+
+maxes <- foreach(i = 1:3, .combine = c, .packages = "iterators") %do% {
+  it2 <- irnorm(1)  
+  max <- foreach(j = 1:5, .combine = c) %do% {
+    nextElem(it2)
+  }
+  max(max)
+}
+
+maxes |> 
+  t() |> 
+  knitr::kable(caption = "Serially computed maximums of Normal random vectors", digits = 3)
+```
+
+# Question 5
+
+Below a run time comparison is given for the performance of the parLapply, foreach and replicate functions for the previous problem.
+
+```{r}
+#foreach
+
+# Set up parallel cluster
+cl <- makeCluster(4)
+registerDoParallel(cl)
+
+#Setting seed in parallel safe way
+  
+
+# Parallel computation of maximums
+tablefy(
+  system.time(
+    maxes <- foreach(i = 1:3, .combine = c, .packages = c("iterators", "foreach")) %dopar% {
+    it2 <- irnorm(1)  
+    max_val <- foreach(j = 1:5, .combine = c, .packages = "foreach") %do% {  
+      nextElem(it2)
+    }
+    max(max_val)
+  }),
+"foreach run time"
+)
+
+# Stop cluster
+stopCluster(cl)
+
+
+
+
+
+```
+
+```{r}
+
+#Function f that takes 5 normal draws from an irnorm iterator and finds the max of these draws
+
+f <- function(x){
+  library(iterators)
+  it <- irnorm(1)
+  elements <- sapply(1:5, function(y) nextElem(it))
+  max(elements)
+  
+}
+
+cl <- makeCluster(10)
+
+
+tablefy(system.time(maxlist <- parLapply(cl, 1:3, f)), "parLapply run time")
+
+stopCluster(cl)
+
+```
+
+```{r}
+
+#Function f that takes 5 normal draws from an irnorm iterator and finds the max of these draws
+f <- function(x){
+  it <- irnorm(1)
+  elements <- sapply(1:5, function(y) nextElem(it))
+  max <- max(elements)
+}
+
+
+
+tablefy(system.time(maxlist <- replicate(3, f(1))), "replicate run time")
+
+
+
+```
+
+Clearly the parLapply function is superior as its runtime is so low that it registers as 0.
