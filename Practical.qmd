@@ -141,3 +141,36 @@ Clearly the use of parallel computing resulting in a much faster computation and
 # Question 3
 
 Below we estimate the coverage of a percentile bootstrap confidence interval for samples of size 50 from an exponential distribution of mean 1.
+
+This will be implemented by generating 500 samples of size 10000 from the exponential distribution with mean 1. For each of these samples a 500 bootstrapped mean estimates will be sampled. For each of the 500 samples a 95% percentile bootstrap confidence interval of the mean will be generated. It will be thereafter be recorded as to whether 1 lies inside each of these intervals, the proportion of intervals than contain 1 will be the estimated coverage
+
+The result is shown below.
+
+```{r}
+
+cl <- makeCluster(10)
+registerDoParallel(cl)
+
+
+#Generate exponential sample 
+
+
+inCi <- foreach(i = 1:500, .combine = c, .packages = 'foreach') %dopar%{
+  smpl_init <- rexp(10000, rate = 1)
+  means <- foreach(i = 1:500, .combine = c, .packages = 'foreach') %dopar% {
+    bsampls <- sample(smpl_init, replace = T)
+    return(mean(bsampls))
+  }
+  
+  quants <- quantile(means, probs = c(0.025, 0.975))
+  
+  return(((quants[1] <= 1) && (quants[2] >= 1)))
+}
+
+paste0(mean(inCi)*100, "%") |> 
+  knitr::kable(col.names = "Estimated Coverage")
+
+stopCluster(cl)
+```
+
+The estimated coverage is 95.2%, this is not a surprising figure as each bootstrap percentile confidence interval is a 95% confidence interval.
