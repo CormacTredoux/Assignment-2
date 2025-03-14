@@ -4,10 +4,18 @@ title: "Practical"
 
 ```{r}
 #| echo: false
-#| mesage: false
+#| message: false
 library(foreach)
 library(doParallel)
 library(tidyverse)
+library(MASS)
+
+#Function that takes system time results and prints an interpretable table
+tablefy <- function(d, heading) {
+data.frame(d)[1:3,] |> 
+  t() |> 
+  knitr::kable(col.names = c("User time", "System Time", "Total elapsed"), caption = heading)
+}
 ```
 
 # Question 1
@@ -34,63 +42,30 @@ stopCluster(cl)
 results |> 
   data.frame() |> 
   tibble::remove_rownames() |> 
-  knitr::kable(col.names = c("Means", "Variances"))
+  knitr::kable(col.names = c("Means", "Variances"), digits = 3)
 ```
 
 # Question 2
 
+Below are serial and parallel bootstrapping computations of 1 sample at a time each of size 1000.
+
 ```{r}
 #| message: false
-#| eval: false
 
-library(MASS)
+
 gal <- galaxies
 
 #1 Bootstrap sample of 1000 at a time
 
 #Serial 
-system.time(
-  result1 <- foreach(i = 1:1000, .combine = c ) %do% {
-    res <- sample(gal, replace = TRUE)
-    median(res)
-  }
-)
-
-#Parallel
-
-cl <- makeCluster(10)
-registerDoParallel(cl)
-
-t <- system.time(
-  result2 <- foreach(i = 1:1000, .combine = c ) %dopar% {
-    res <- sample(gal, replace = TRUE)
-    median(res)
-  }
-) 
-
-
-
-
-  
- 
-  
-
-stopCluster(cl)
-mean(result1)
-mean(result2)
-
-#1000 bootstrap samples of 1000 at a time 
-
-
-#Serial 
-system.time(
-  result1 <- foreach(i = 1:1000, .combine = c ) %do% {
-    inner <- foreach(j = 1:1000, .combine = c) %do% {
+tablefy(
+  system.time(
+    result1 <- foreach(i = 1:1000, .combine = c ) %do% {
       res <- sample(gal, replace = TRUE)
       median(res)
     }
-    inner
-  }
+  ), 
+  "Serial single sample bootstrap"
 )
 
 #Parallel
@@ -98,18 +73,71 @@ system.time(
 cl <- makeCluster(10)
 registerDoParallel(cl)
 
-system.time(
-  result2 <- foreach(i = 1:1000, .combine = c ) %dopar% {
-    foreach(j = 1:1000, .combine = c) %dopar% {
-    res <- sample(gal, replace = TRUE)
-    median(res)
+tablefy(
+  system.time(
+    result2 <- foreach(i = 1:1000, .combine = c ) %dopar% {
+      res <- sample(gal, replace = TRUE)
+      median(res)
     }
-  }
+  ), 
+  "Parallel single sample bootstrap"
 )
 
 stopCluster(cl)
-mean(result1)
-mean(result2)
+
+
 
 
 ```
+
+Clearly the use of parallelisation did not result in a more efficient computation, there was little to not difference in the user (CPU) time but there was in increase in system (OS) time, likely due to task scheduling of the parallel tasks. Clearly in this case parallelising the computation did not result in any efficiency, it is likely that the quantity of data that had to be returned was not large enough to justify the use of parallel computing, this idea is explored below.
+
+Below are serial and parallel bootstraps of 1000 samples at a time, each of size 1000.
+
+```{r}
+#| message: false
+
+
+#1 00 bootstrap samples of 1000 at a time 
+
+
+#Serial 
+tablefy(
+  system.time(
+    result1 <- foreach(i = 1:1000, .combine = c ) %do% {
+      inner <- foreach(j = 1:1000, .combine = c) %do% {
+        res <- sample(gal, replace = TRUE)
+        median(res)
+      }
+      inner
+    }
+  ), "Serial bootstrap of 1000 samples" 
+)
+
+#Parallel
+
+cl <- makeCluster(10)
+registerDoParallel(cl)
+
+tablefy(system.time(
+  result2 <- foreach(i = 1:1000, .combine = rbind, .packages = 'foreach' ) %dopar% {
+    inner <- foreach(j = 1:1000, .combine = c, .packages = 'foreach') %dopar% {
+    res <- sample(gal, replace = TRUE)
+    median(res)
+    }
+    return(inner)
+  }
+), "Parallel bootstrap of 1000 samples"
+)
+
+stopCluster(cl)
+
+
+
+```
+
+Clearly the use of parallel computing resulting in a much faster computation and leads one ot believe that it would provide efficiency in a situation where the quantity of data that needs to be returned is large.
+
+# Question 3
+
+Below we estimate the coverage of a percentile bootstrap confidence interval for samples of size 50 from an exponential distribution of mean 1.
